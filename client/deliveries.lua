@@ -1,3 +1,4 @@
+local Bridge = exports.community_bridge:Bridge()
 local QBCore = exports['qb-core']:GetCoreObject()
 local JobsDone = 0
 local LocationsDone = {}
@@ -87,7 +88,7 @@ local function setupZones(type, number)
                     TriggerEvent('qb-shops:client:Vehicle')
                 elseif type == 'stores' then
                     markerLocation = coords
-                    QBCore.Functions.Notify(Lang:t('mission.store_reached'))
+                    Bridge.Notify.SendNotify(Lang:t('mission.store_reached'))
                     ShowMarker(true)
                     SetDelivering(true)
                 end
@@ -219,7 +220,7 @@ local function getNewLocation()
         SetBlipRoute(CurrentBlip, true)
         SetBlipRouteColour(CurrentBlip, 3)
     else
-        QBCore.Functions.Notify(Lang:t('success.payslip_time'))
+        Bridge.Notify.SendNotify(Lang:t('success.payslip_time'))
         if CurrentBlip ~= nil then
             RemoveBlip(CurrentBlip)
             ClearAllBlipRoutes()
@@ -266,50 +267,49 @@ end
 local function GetInTrunk()
     local ped = PlayerPedId()
     if IsPedInAnyVehicle(ped, false) then
-        return QBCore.Functions.Notify(Lang:t('error.get_out_vehicle'), 'error')
+        return Bridge.Notify.SendNotify(Lang:t('error.get_out_vehicle'), 'error')
     end
     local pos = GetEntityCoords(ped, true)
     local vehicle = GetVehiclePedIsIn(ped, true)
     local tv = getTruckerVehicle(vehicle)
     if not isTruckerVehicle(vehicle) or CurrentPlate ~= QBCore.Functions.GetPlate(vehicle) then
-        return QBCore.Functions.Notify(Lang:t('error.vehicle_not_correct'), 'error')
+        return Bridge.Notify.SendNotify(Lang:t('error.vehicle_not_correct'), 'error')
     end
     if not BackDoorsOpen(vehicle) then
-        return QBCore.Functions.Notify(Lang:t('error.backdoors_not_open'), 'error')
+        return Bridge.Notify.SendNotify(Lang:t('error.backdoors_not_open'), 'error')
     end
     local trunkpos = GetOffsetFromEntityInWorldCoords(vehicle, 0, -2.5, 0)
     if #(pos - vector3(trunkpos.x, trunkpos.y, trunkpos.z)) > Config.Vehicles[tv].trunkpos then
-        return QBCore.Functions.Notify(Lang:t('error.too_far_from_trunk'), 'error')
+        return Bridge.Notify.SendNotify(Lang:t('error.too_far_from_trunk'), 'error')
     end
     if isWorking then return end
     isWorking = true
-    QBCore.Functions.Progressbar('work_carrybox', Lang:t('mission.take_box'), 2000, false, true, {
-        disableMovement = true,
-        disableCarMovement = true,
-        disableMouse = false,
-        disableCombat = true,
+    Bridge.Notify.StartProgressBar(2000, Lang:t('mission.take_box'), false, true, {
+        move = true,
+        car = true,
+        mouse = false,
+        combat = true,
     }, {
         animDict = 'anim@gangops@facility@servers@',
-        anim = 'hotwire',
-        flags = 16,
-    }, {}, {}, function()
+        anim = 'hotwire'
+    }, function()
         isWorking = false
         carryBox()
         hasBox = true
     end, function()
-        isWorking = false
+      isWorking = false
     end)
 end
 
 local function Deliver()
     isWorking = true
     Wait(500)
-    QBCore.Functions.Progressbar('work_dropbox', Lang:t('mission.deliver_box'), 2000, false, true, {
-        disableMovement = true,
-        disableCarMovement = true,
-        disableMouse = false,
-        disableCombat = true,
-    }, {}, {}, {}, function()
+    Bridge.Notify.StartProgressBar(2000, Lang:t('mission.deliver_box'), false, true, {
+        move = true,
+        car = true,
+        mouse = false,
+        combat = true,
+    }, {}, function()
         isWorking = false
         ClearPedTasks(PlayerPedId())
         if boxObject then
@@ -334,17 +334,17 @@ local function Deliver()
             currentCount = 0
             JobsDone = JobsDone + 1
             if JobsDone == Config.MaxDeliveries then
-                QBCore.Functions.Notify(Lang:t('mission.return_to_station'))
+                Bridge.Notify.SendNotify(Lang:t('mission.return_to_station'))
                 returnToStation()
             else
-                QBCore.Functions.Notify(Lang:t('mission.goto_next_point'))
+                Bridge.Notify.SendNotify(Lang:t('mission.goto_next_point'))
                 getNewLocation()
             end
         else
-            QBCore.Functions.Notify(Lang:t('mission.another_box'))
+            Bridge.Notify.SendNotify(Lang:t('mission.another_box'))
         end
     end, function()
-        isWorking = false
+      isWorking = false
     end)
 end
 
@@ -426,13 +426,13 @@ RegisterNetEvent('qb-shops:client:Vehicle', function()
                 if returningToStation or CurrentLocation then
                     ClearAllBlipRoutes()
                     returningToStation = false
-                    QBCore.Functions.Notify(Lang:t('mission.job_completed'), 'success')
+                    Bridge.Notify.SendNotify(Lang:t('mission.job_completed'), 'success')
                 end
             else
-                QBCore.Functions.Notify(Lang:t('error.vehicle_not_correct'), 'error')
+                Bridge.Notify.SendNotify(Lang:t('error.vehicle_not_correct'), 'error')
             end
         else
-            QBCore.Functions.Notify(Lang:t('error.no_driver'))
+            Bridge.Notify.SendNotify(Lang:t('error.no_driver'))
         end
     end
 end)
@@ -455,7 +455,7 @@ CreateThread(function()
                     if #(GetEntityCoords(PlayerPedId()) - markerLocation) < 5 then
                         Deliver()
                     else
-                        QBCore.Functions.Notify(Lang:t('error.too_far_from_delivery'), 'error')
+                        Bridge.Notify.SendNotify(Lang:t('error.too_far_from_delivery'), 'error')
                     end
                 end
             end
