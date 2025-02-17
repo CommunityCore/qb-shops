@@ -1,3 +1,4 @@
+local Bridge = exports.community_bridge:Bridge()
 local QBCore = exports['qb-core']:GetCoreObject()
 local currentShop, playerData
 local pedSpawned = false
